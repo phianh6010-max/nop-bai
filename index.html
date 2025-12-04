@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Điểm Danh Chung</title>
+<style>
+    body {
+        background:#0f1724;
+        font-family:Arial;
+        color:white;
+        padding:20px;
+    }
+    .box {
+        max-width:450px;
+        margin:auto;
+        background:#ffffff15;
+        padding:20px;
+        border-radius:14px;
+        backdrop-filter:blur(5px);
+    }
+    input {
+        width:100%;
+        padding:12px;
+        margin-top:10px;
+        border-radius:8px;
+        border:none;
+    }
+    button {
+        width:100%;
+        padding:12px;
+        margin-top:10px;
+        border:none;
+        border-radius:8px;
+        font-weight:bold;
+        cursor:pointer;
+    }
+    .ok {background:#00e1ff;color:#002;}
+    .no {background:#ff5c5c;color:white;}
+    .rank {
+        margin-top:20px;
+        background:#ffffff10;
+        padding:15px;
+        border-radius:10px;
+    }
+    .item {
+        padding:8px;
+        background:#ffffff10;
+        border-radius:8px;
+        margin-bottom:6px;
+    }
+</style>
+</head>
+
+<body>
+<div class="box">
+    <h2>📌 Điểm danh chung</h2>
+    <p>Nhập tên và điểm danh — mọi người đều sẽ thấy!</p>
+
+    <input id="name" placeholder="Nhập tên…">
+
+    <button class="ok" onclick="diemDanh()">Mình làm rồi ✅</button>
+    <button class="no" onclick="chuaLam()">Chưa làm ❌</button>
+
+    <p id="msg" style="margin-top:10px;color:#7cf;"></p>
+
+    <div class="rank">
+        <h3>📋 Danh sách điểm danh</h3>
+        <div id="rankList">Đang tải…</div>
+    </div>
+</div>
+
+<script>
+let BIN_ID = localStorage.getItem("BIN_ID_DIEM_DANH");
+
+// Nếu chưa có bin → tạo mới
+async function createBin(){
+    let res = await fetch("https://json.extendsclass.com/bin", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify([])
+    });
+
+    let id = await res.text();
+    localStorage.setItem("BIN_ID_DIEM_DANH", id);
+    return id;
+}
+
+async function getBinId(){
+    if(BIN_ID) return BIN_ID;
+    BIN_ID = await createBin();
+    return BIN_ID;
+}
+
+async function loadRank(){
+    let id = await getBinId();
+    let res = await fetch(`https://json.extendsclass.com/bin/${id}`);
+    let data = await res.json();
+
+    let html = "";
+    data.forEach((name, i)=>{
+        html += `<div class="item">#${i+1} — <b>${name}</b></div>`;
+    });
+
+    document.getElementById("rankList").innerHTML = html || "<i>Chưa ai điểm danh…</i>";
+}
+
+async function diemDanh(){
+    let name = document.getElementById("name").value.trim();
+    if(!name){
+        document.getElementById("msg").innerText="Nhập tên trước đã!";
+        return;
+    }
+
+    let id = await getBinId();
+    let res = await fetch(`https://json.extendsclass.com/bin/${id}`);
+    let data = await res.json();
+
+    if(!data.includes(name)) data.push(name);
+
+    await fetch(`https://json.extendsclass.com/bin/${id}`, {
+        method:"PUT",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(data)
+    });
+
+    document.getElementById("msg").innerText = "Điểm danh thành công 🎉";
+    loadRank();
+}
+
+function chuaLam(){
+    document.getElementById("msg").innerText = "Mau làm bài lên nào 😤";
+}
+
+loadRank();
+</script>
+
+</body>
+</html>
